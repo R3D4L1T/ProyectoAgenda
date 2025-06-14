@@ -21,19 +21,17 @@ import java.util.List;
 public class Detalle_Nota extends AppCompatActivity {
 
     private static final String TAG = "Detalle_Nota";
-    Button botonImportante;
-    TextView idNotaDetalle, uidUsuarioDetalle, correoUsuarioDetalle, tituloDetalle, descripcionDetalle,
+    private Button botonImportante;
+    private TextView idNotaDetalle, uidUsuarioDetalle, correoUsuarioDetalle, tituloDetalle, descripcionDetalle,
             fechaRegistroDetalle, fechaNotaDetalle, estadoDetalle;
 
-    String idNota, uidUsuario, correoUsuario, fechaRegistro, titulo, descripcion, fechaNota, estado;
-
-    boolean comprobarNotaImportante = false;
+    private String idNota, uidUsuario, correoUsuario, fechaRegistro, titulo, descripcion, fechaNota, estado;
+    private boolean comprobarNotaImportante = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detalle_nota);
-        Log.d(TAG, "onCreate");
 
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
@@ -43,13 +41,9 @@ public class Detalle_Nota extends AppCompatActivity {
         }
 
         inicializarVistas();
-        Log.d(TAG, "Vistas inicializadas");
         recuperarDatos();
-        Log.d(TAG, "Datos recuperados");
         setearDatosRecuperados();
-        Log.d(TAG, "Datos recuperados establecidos en las vistas");
         verificarNotaImportante();
-        Log.d(TAG, "Nota importante verificada");
 
         botonImportante.setOnClickListener(v -> {
             if (comprobarNotaImportante) {
@@ -61,7 +55,6 @@ public class Detalle_Nota extends AppCompatActivity {
     }
 
     private void inicializarVistas() {
-        Log.d(TAG, "Inicializando vistas");
         idNotaDetalle = findViewById(R.id.Id_nota_Detalle);
         uidUsuarioDetalle = findViewById(R.id.Uid_usuario_Detalle);
         correoUsuarioDetalle = findViewById(R.id.Correo_usuario_Detalle);
@@ -74,7 +67,6 @@ public class Detalle_Nota extends AppCompatActivity {
     }
 
     private void recuperarDatos() {
-        Log.d(TAG, "Recuperando datos");
         Bundle intent = getIntent().getExtras();
 
         if (intent != null) {
@@ -87,21 +79,18 @@ public class Detalle_Nota extends AppCompatActivity {
             estado = intent.getString("estado");
             idNota = intent.getString("id_nota");
 
-            // Verificación de uidUsuario
             if (uidUsuario == null) {
                 Log.e(TAG, "UID de usuario es nulo después de recuperar datos del Intent");
-                Toast.makeText(this, "Error: UID de usuario nulo", Toast.LENGTH_SHORT).show();
-                finish(); // Finalizar actividad si UID de usuario es nulo
+                showToast("Error: UID de usuario nulo");
+                finish();
             }
         } else {
-            Log.e(TAG, "No se recibieron datos del intent");
-            Toast.makeText(this, "Error al recibir datos del intent", Toast.LENGTH_SHORT).show();
-            finish(); // Finalizar actividad si no hay datos recibidos
+            showToast("Error al recibir datos del intent");
+            finish();
         }
     }
 
     private void setearDatosRecuperados() {
-        Log.d(TAG, "Seteando datos recuperados en las vistas");
         idNotaDetalle.setText(idNota);
         uidUsuarioDetalle.setText(uidUsuario);
         correoUsuarioDetalle.setText(correoUsuario);
@@ -115,65 +104,48 @@ public class Detalle_Nota extends AppCompatActivity {
     private void agregarNotaImportante() {
         new Thread(() -> {
             try {
-                Log.d(TAG, "Comenzando a agregar nota importante");
-
-                // Verificar si la nota ya existe como importante
                 List<Nota> notasUsuario = AppDatabase.getInstance(getApplicationContext())
                         .notaDao().getNotasByUsuario(uidUsuario);
+
                 for (Nota nota : notasUsuario) {
                     if (String.valueOf(nota.getId()).equals(idNota)) {
                         showToast("La nota ya es importante");
-                        Log.d(TAG, "La nota ya es importante");
-                        return; // Salir del método si la nota ya es importante
+                        return;
                     }
                 }
 
-                // Agregar la nota como importante en la base de datos local (Room)
-                Nota nota = new Nota(
-                        uidUsuario,
-                        correoUsuario,
-                        fechaRegistro,
-                        titulo,
-                        descripcion,
-                        fechaNota,
-                        estado
-                );
+                Nota nota = new Nota(uidUsuario, correoUsuario, fechaRegistro, titulo, descripcion, fechaNota, estado);
                 long idNota = AppDatabase.getInstance(getApplicationContext()).notaDao().insert(nota);
                 nota.setId((int) idNota);
 
-                // Guardar la nota como importante en Firebase
                 DatabaseReference notasImportantesRef = FirebaseDatabase.getInstance().getReference("Notas_Importantes").child(uidUsuario);
                 notasImportantesRef.child(String.valueOf(nota.getId())).setValue(nota);
 
                 runOnUiThread(() -> {
-                    Toast.makeText(Detalle_Nota.this, "Se ha añadido a notas importantes", Toast.LENGTH_SHORT).show();
+                    showToast("Se ha añadido a notas importantes");
                     comprobarNotaImportante = true;
                     actualizarBotonImportante();
-                    Log.d(TAG, "Nota importante añadida correctamente");
                 });
             } catch (Exception e) {
                 e.printStackTrace();
                 showError("Error al agregar nota importante", e);
             }
-
         }).start();
     }
 
     private void eliminarNotaImportante() {
-        Log.d(TAG, "Eliminando nota importante");
         new Thread(() -> {
             try {
                 if (idNota == null) {
                     showToast("Error: ID de nota nulo");
-                    return; // Salir del método si el ID de la nota es nulo
+                    return;
                 }
 
-                AppDatabase db = AppDatabase.getInstance(getApplicationContext());
                 int idNotaInt = Integer.parseInt(idNota);
-                db.notaDao().deleteNotaById(idNotaInt);
+                AppDatabase.getInstance(getApplicationContext()).notaDao().deleteNotaById(idNotaInt);
 
                 runOnUiThread(() -> {
-                    Toast.makeText(Detalle_Nota.this, "La nota ya no es importante", Toast.LENGTH_SHORT).show();
+                    showToast("La nota ya no es importante");
                     comprobarNotaImportante = false;
                     actualizarBotonImportante();
                 });
@@ -186,28 +158,21 @@ public class Detalle_Nota extends AppCompatActivity {
     }
 
     private void verificarNotaImportante() {
-        Log.d(TAG, "Verificando nota importante");
         if (uidUsuario == null || idNota == null) {
-            Log.e(TAG, "UID de usuario o ID de nota nulos");
             return;
         }
 
         new Thread(() -> {
             try {
-                AppDatabase db = AppDatabase.getInstance(getApplicationContext());
-                Nota nota = db.notaDao().getNotaById(Integer.parseInt(idNota));
+                Nota nota = AppDatabase.getInstance(getApplicationContext()).notaDao().getNotaById(Integer.parseInt(idNota));
 
                 if (nota != null && nota.getUidUsuario().equals(uidUsuario)) {
                     comprobarNotaImportante = true;
-                    Log.d(TAG, "La nota es importante");
                 } else {
                     comprobarNotaImportante = false;
-                    Log.d(TAG, "La nota no es importante");
                 }
 
                 runOnUiThread(this::actualizarBotonImportante);
-            } catch (NumberFormatException e) {
-                runOnUiThread(() -> showError("Error al convertir ID de nota a entero", e));
             } catch (Exception e) {
                 runOnUiThread(() -> showError("Error al verificar nota importante", e));
             }
@@ -215,15 +180,13 @@ public class Detalle_Nota extends AppCompatActivity {
     }
 
     private void actualizarBotonImportante() {
-        if (botonImportante != null) {
-            runOnUiThread(() -> {
-                if (comprobarNotaImportante) {
-                    botonImportante.setText("Eliminar de importantes");
-                } else {
-                    botonImportante.setText("Agregar a importantes");
-                }
-            });
-        }
+        runOnUiThread(() -> {
+            if (comprobarNotaImportante) {
+                botonImportante.setText("Eliminar de importantes");
+            } else {
+                botonImportante.setText("Agregar a importantes");
+            }
+        });
     }
 
     private void showToast(String message) {
@@ -237,8 +200,8 @@ public class Detalle_Nota extends AppCompatActivity {
 
     @Override
     public boolean onSupportNavigateUp() {
-        Log.d(TAG, "Volviendo hacia atrás");
         onBackPressed();
         return super.onSupportNavigateUp();
     }
 }
+
