@@ -108,7 +108,7 @@ public class Registro extends AppCompatActivity {
                 .addOnSuccessListener(new OnSuccessListener<AuthResult>() {
                     @Override
                     public void onSuccess(AuthResult authResult) {
-                        Log.d(TAG, "Cuenta creada exitosamente");
+                        Log.d(TAG, "Cuenta creada exitosamente!!");
                         GuardarInformacion();
                     }
                 }).addOnFailureListener(new OnFailureListener() {
