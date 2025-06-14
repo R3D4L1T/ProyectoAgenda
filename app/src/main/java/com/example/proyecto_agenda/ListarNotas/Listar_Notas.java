@@ -31,7 +31,7 @@ import java.util.List;
 public class Listar_Notas extends AppCompatActivity {
 
     private static final String TAG = "Listar_Notas";
-
+    // Listar notas
     RecyclerView recyclerviewNotas;
     LinearLayoutManager linearLayoutManager;
     NotaAdapter notaAdapter;
